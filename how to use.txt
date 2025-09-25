@@ -1,0 +1,93 @@
+
+
+This app is built with Expo SDK 54 and runs inside the Expo Go app on iOS or Android. No Xcode or Android Studio required.
+
+1. Install Expo Go on your phone
+
+iPhone: open the App Store and search for Expo Go (publisher: Expo Project).
+
+Android: open the Google Play Store and search for Expo Go.
+
+2. Install Node.js (only if you want to run it on your computer)
+
+Go to the website: nodejs.org
+
+Download and install the LTS version (20.x or newer).
+
+After install, open your terminal or PowerShell and check:
+node -v
+npm -v
+
+3. Unzip the project
+
+Extract the zip file anywhere on your computer (for example, Desktop).
+
+Open a terminal (PowerShell on Windows).
+
+Navigate into the project folder. Example:
+cd C:\Users\YourName\Desktop\workout-tracker
+
+4. Install dependencies
+
+Run this once inside the project folder:
+npm install
+
+5. Start the development server
+
+Run:
+npx expo start
+
+This will open a new browser tab with Expo Dev Tools.
+
+In your terminal, you will also see a QR code.
+
+6. Open the app on your phone
+
+On iPhone: open the Camera app, point it at the QR code, and tap the link that appears. It will open inside Expo Go.
+
+On Android: open the Expo Go app and use the built-in QR scanner.
+
+You should now see the app running.
+
+7. Test the features
+
+Switch between Home and Workouts tabs.
+
+In Workouts:
+
+Tap “Select an exercise…” → a modal list will slide up from the bottom.
+
+Pick an exercise (Bench Press, Squat, Deadlift, Overhead Press, Barbell Row).
+
+Enter weight, reps, and sets.
+
+Tap “Save Workout”.
+
+The saved workout is logged in the terminal where the server is running. Example:
+Workout saved: { exercise: 'Bench Press', weight: '135', reps: '10', sets: '3' }
+
+8. Editing the exercise list
+
+All exercises are stored in a single file:
+app/data/exercises.ts
+
+To add or remove an exercise:
+
+Open the file in a text editor.
+
+Modify the list. Example:
+
+export const EXERCISES = [
+"Bench Press",
+"Squat",
+"Deadlift",
+"Overhead Press",
+"Barbell Row",
+"Pull-Ups"
+];
+
+Save the file. The app will reload automatically and the new exercise will appear in the list.
+
+9. Stopping the server
+
+In the terminal, press Ctrl + C to stop the Expo server.
