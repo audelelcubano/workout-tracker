@@ -9,7 +9,7 @@ import { useAuth } from '../../components/Auth';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { user, loading } = useAuth();
-
+//blocks access until logged in
   if (loading) return null; 
   if (!user) return <Redirect href="/sign-in" />;
 

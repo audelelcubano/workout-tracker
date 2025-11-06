@@ -25,4 +25,4 @@ export default function RootLayout() {
     </ThemeProvider>
     </AuthProvider>
   );
-}
+} //wrapped everything in auth
