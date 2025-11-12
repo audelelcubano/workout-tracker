@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Button,
   KeyboardAvoidingView,
@@ -13,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Timer } from "@data/Timer";
+
 
 const EXERCISES = [
   "Bench Press",
@@ -34,6 +36,9 @@ export default function WorkoutsScreen() {
   const [sets, setSets] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [workouts, setWorkouts] = useState<any[]>([]);
+  const [timerModalVisible, setTimerModalVisible] = useState(false); //controls timer pop-up
+  const [timerSeconds, setTimerSeconds] = useState(0); //tracks seconds
+  const timerRef = useRef<Timer | null>(null); //stores instance of timer
 
   // 🧠 Load current-session workouts only (NOT history)
   useEffect(() => {
@@ -43,6 +48,13 @@ export default function WorkoutsScreen() {
     };
     loadCurrent();
   }, []);
+
+  useEffect(() => {
+  // Create the Timer instance only once
+  timerRef.current = new Timer(0, (seconds) => {
+    setTimerSeconds(seconds); // Updates the modal every second
+  });
+}, []);
 
   // 💾 Save workout to both "workouts" and "history"
   const handleSave = async () => {
@@ -74,6 +86,12 @@ export default function WorkoutsScreen() {
     setWeight("");
     setReps("");
     setSets("");
+
+    //Show the timer modal after saving a workout
+    setTimerSeconds(0); //Reset timer display
+    setTimerModalVisible(true); //Open the popup
+    timerRef.current?.reset(); //reset instance
+    timerRef.current?.start(); //Start counting
   };
 
   // 🚮 Clear only current-session workouts
@@ -179,6 +197,19 @@ export default function WorkoutsScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+        {/* Timer */}
+        <Modal visible={timerModalVisible} transparent animationType="fade">
+          <View style={styles.timerOverlay}>
+            <View style={styles.timerContent}>
+              <Text style={styles.timerText}>Workout Timer: {timerSeconds}s</Text>
+              <Button title="Close" onPress={() => {
+              timerRef.current?.pause();
+              setTimerModalVisible(false);
+            }} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -254,4 +285,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   clearText: { color: "#444", fontWeight: "600" },
+  timerOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+},
+timerContent: {
+  backgroundColor: "#fff",
+  padding: 20,
+  borderRadius: 12,
+  alignItems: "center",
+},
+timerText: {
+  fontSize: 24,
+  marginBottom: 20,
+  fontWeight: "bold",
+},
 });
