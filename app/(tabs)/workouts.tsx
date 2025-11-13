@@ -81,6 +81,17 @@ export default function WorkoutsScreen() {
     const updatedHistory = [...parsedHistory, newWorkout];
     await AsyncStorage.setItem("history", JSON.stringify(updatedHistory));
 
+if (user) {
+    const historyCol = collection(db, "users", user.uid, "history");
+    await addDoc(historyCol, {
+      exercise: newWorkout.exercise,
+      weight: newWorkout.weight,
+      reps: newWorkout.reps,
+      sets: newWorkout.sets,
+      date: newWorkout.date,
+    });
+  }//firebase data retainment for history screen
+
     // Reset input fields
     setExercise("");
     setWeight("");
