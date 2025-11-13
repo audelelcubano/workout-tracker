@@ -1,5 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { useAuth } from "@/components/Auth";
+
+
 import {
   Button,
   KeyboardAvoidingView,
@@ -34,6 +39,7 @@ export default function WorkoutsScreen() {
   const [sets, setSets] = useState("");
   const [showPicker, setShowPicker] = useState(false);
   const [workouts, setWorkouts] = useState<any[]>([]);
+  const { user } = useAuth(); //current firebase user id
 
   // 🧠 Load current-session workouts only (NOT history)
   useEffect(() => {
@@ -68,6 +74,17 @@ export default function WorkoutsScreen() {
     const parsedHistory = storedHistory ? JSON.parse(storedHistory) : [];
     const updatedHistory = [...parsedHistory, newWorkout];
     await AsyncStorage.setItem("history", JSON.stringify(updatedHistory));
+
+if (user) {
+    const historyCol = collection(db, "users", user.uid, "history");
+    await addDoc(historyCol, {
+      exercise: newWorkout.exercise,
+      weight: newWorkout.weight,
+      reps: newWorkout.reps,
+      sets: newWorkout.sets,
+      date: newWorkout.date,
+    });
+  }//firebase data retainment for history screen
 
     // Reset input fields
     setExercise("");
