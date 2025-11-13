@@ -1,6 +1,20 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  writeBatch,
+} from "firebase/firestore";
+import { useAuth } from "@/components/Auth";
+
+//Orignally everything was stored in AsyncStorage, its now in firebase.
+// data is stored under users/{uid}/history in firebase
 import {
     Alert,
     FlatList,
@@ -21,48 +35,78 @@ interface WorkoutEntry {
 }
 
 export default function HistoryScreen() {
+  const { user } = useAuth();
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
 
-  // ✅ Load workouts from "history" key every time tab gains focus
   useFocusEffect(
+    //focus effect reloads the history so that
+    // the data is refreshed after tabs are switched
     useCallback(() => {
       const loadHistory = async () => {
-        const stored = await AsyncStorage.getItem("history");
-        if (stored) setWorkouts(JSON.parse(stored));
-        else setWorkouts([]);
+        if (!user) {
+          setWorkouts([]);
+          return;
+        }
+
+        const historyCol = collection(db, "users", user.uid, "history");
+        const q = query(historyCol, orderBy("date", "desc"));
+        const snap = await getDocs(q);
+
+        const rows: WorkoutEntry[] = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<WorkoutEntry, "id">),
+        }));
+
+        setWorkouts(rows);
       };
+
       loadHistory();
-    }, [])
+    }, [user])
   );
 
   const deleteWorkout = async (id: string) => {
+    if (!user) return;
     Alert.alert("Delete Workout", "Are you sure you want to delete this entry?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          const updated = workouts.filter((w) => w.id !== id);
-          setWorkouts(updated);
-          await AsyncStorage.setItem("history", JSON.stringify(updated));
+          await deleteDoc(doc(db, "users", user.uid, "history", id));
+          setWorkouts((prev) => prev.filter((w) => w.id !== id));
         },
       },
     ]);
   };
 
   const clearAll = async () => {
+    if (!user) return;
     Alert.alert("Clear All Workouts", "This cannot be undone!", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Clear",
         style: "destructive",
         onPress: async () => {
-          await AsyncStorage.removeItem("history");
+          const batch = writeBatch(db);
+          workouts.forEach((w) => {
+            batch.delete(doc(db, "users", user.uid, "history", w.id));
+          });
+          await batch.commit();
           setWorkouts([]);
         },
       },
     ]);
   };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <Text style={styles.empty}>Sign in to view your workout history.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -82,7 +126,8 @@ export default function HistoryScreen() {
               onLongPress={() => deleteWorkout(item.id)}
             >
               <Text style={styles.itemText}>
-                {item.exercise} — {item.weight} lbs × {item.reps} reps × {item.sets} sets
+                {item.exercise} — {item.weight} lbs × {item.reps} reps ×{" "}
+                {item.sets} sets
               </Text>
               <Text style={styles.dateText}>
                 📅 {new Date(item.date).toLocaleString()}
@@ -100,6 +145,7 @@ export default function HistoryScreen() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
