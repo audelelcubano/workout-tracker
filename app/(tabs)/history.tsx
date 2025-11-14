@@ -130,7 +130,7 @@ export default function HistoryScreen() {
                 {item.sets} sets
               </Text>
               <Text style={styles.dateText}>
-                📅 {new Date(item.date).toLocaleString()}
+                 {new Date(item.date).toLocaleString()}
               </Text>
             </Pressable>
           )}
