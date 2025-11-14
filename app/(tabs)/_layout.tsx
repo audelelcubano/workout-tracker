@@ -56,7 +56,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* ✅ New tab added */}
+      {/* New tab added */}
       <Tabs.Screen
         name="history"
         options={{
