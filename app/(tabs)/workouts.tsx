@@ -40,7 +40,7 @@ export default function WorkoutsScreen() {
   const [timerSeconds, setTimerSeconds] = useState(0); //tracks seconds
   const timerRef = useRef<Timer | null>(null); //stores instance of timer
 
-  // 🧠 Load current-session workouts only (NOT history)
+  //  Load current-session workouts only (NOT history)
   useEffect(() => {
     const loadCurrent = async () => {
       const stored = await AsyncStorage.getItem("workouts");
@@ -56,7 +56,7 @@ export default function WorkoutsScreen() {
   });
 }, []);
 
-  // 💾 Save workout to both "workouts" and "history"
+  //  Save workout to both "workouts" and "history"
   const handleSave = async () => {
     if (!exercise || !weight || !reps || !sets) return;
 
@@ -105,7 +105,7 @@ if (user) {
     timerRef.current?.start(); //Start counting
   };
 
-  // 🚮 Clear only current-session workouts
+  //  Clear only current-session workouts
   const clearWorkouts = async () => {
     await AsyncStorage.removeItem("workouts");
     setWorkouts([]);
@@ -187,7 +187,7 @@ if (user) {
 
           <Button title="Save Workout" onPress={handleSave} />
 
-          {/* ✅ Show the active-session list */}
+          {/*  Show the active-session list */}
           {workouts.length > 0 && (
             <>
               <View style={{ marginTop: 20 }}>
