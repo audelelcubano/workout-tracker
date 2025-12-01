@@ -1,7 +1,15 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import {collection, deleteDoc, doc, getDocs, orderBy, query, writeBatch,} from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  writeBatch,
+} from "firebase/firestore";
 import { useAuth } from "@/components/Auth";
 import { usePathname } from "expo-router";
 
@@ -16,7 +24,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Helper: clear session workouts too
 async function clearSessionWorkoutsForUser(uid: string) {
   const sessionCol = collection(db, "users", uid, "sessionWorkouts");
   const snapshot = await getDocs(sessionCol);
@@ -26,15 +33,16 @@ async function clearSessionWorkoutsForUser(uid: string) {
   await batch.commit();
 }
 
-// Workout entry structure
 interface WorkoutEntry {
-  id: string;       // Firestore doc ID
-  exercise: string;
-  sets: string;
-  reps: string;
-  weight: string;
+  id: string;
+  exercise?: string;
+  sets?: string;
+  reps?: string;
+  weight?: string;
   date: string;
-  _ref: any;        // Firebase doc reference (for deletion)
+  type?: string; // "routine" or normal
+  routineName?: string;
+  _ref: any;
 }
 
 export default function HistoryScreen() {
@@ -42,14 +50,12 @@ export default function HistoryScreen() {
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
   const pathname = usePathname();
 
-  // WEB: clear state when leaving page
   useEffect(() => {
     if (pathname !== "/(tabs)/history") {
       setWorkouts([]);
     }
   }, [pathname]);
 
-  // Load history when focused
   useFocusEffect(
     useCallback(() => {
       const loadHistory = async () => {
@@ -63,23 +69,19 @@ export default function HistoryScreen() {
         const snap = await getDocs(q);
 
         const rows = snap.docs.map((d) => ({
-          id: d.id,       // REAL FIREBASE DOC ID
+          id: d.id,
           ...d.data(),
-          _ref: d.ref,    // SAVE DOC REF FOR PROPER DELETE
+          _ref: d.ref,
         })) as WorkoutEntry[];
 
         setWorkouts(rows);
       };
 
       loadHistory();
-
-      return () => {
-        setWorkouts([]);
-      };
+      return () => setWorkouts([]);
     }, [user])
   );
 
-  // Clear ALL history workouts
   const clearAll = async () => {
     if (!user) return;
 
@@ -100,11 +102,7 @@ export default function HistoryScreen() {
     try {
       const batch = writeBatch(db);
 
-      // Delete using REAL Firestore doc refs
-      workouts.forEach((w) => {
-        batch.delete(w._ref);
-      });
-
+      workouts.forEach((w) => batch.delete(w._ref));
       await batch.commit();
       await clearSessionWorkoutsForUser(user.uid);
 
@@ -114,7 +112,6 @@ export default function HistoryScreen() {
     }
   };
 
-  // Delete a single item
   const deleteWorkout = async (id: string) => {
     const target = workouts.find((w) => w.id === id);
     if (!user || !target) return;
@@ -145,20 +142,37 @@ export default function HistoryScreen() {
           ListEmptyComponent={
             <Text style={styles.empty}>No workouts logged yet.</Text>
           }
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.item}
-              onLongPress={() => deleteWorkout(item.id)}
-            >
-              <Text style={styles.itemText}>
-                {item.exercise} — {item.weight} lbs × {item.reps} reps ×{" "}
-                {item.sets} sets
-              </Text>
-              <Text style={styles.dateText}>
-                {new Date(item.date).toLocaleString()}
-              </Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const isRoutine = item.type === "routine";
+
+            return (
+              <Pressable
+                style={[styles.item, isRoutine && styles.routineItem]}
+                onLongPress={() => deleteWorkout(item.id)}
+              >
+                {isRoutine ? (
+                  <>
+                    <Text style={styles.itemText}>
+                      📝 Routine: {item.routineName}
+                    </Text>
+                    <Text style={styles.dateText}>
+                      {new Date(item.date).toLocaleString()}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.itemText}>
+                      {item.exercise} — {item.weight} lbs × {item.reps} reps ×{" "}
+                      {item.sets} sets
+                    </Text>
+                    <Text style={styles.dateText}>
+                      {new Date(item.date).toLocaleString()}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            );
+          }}
         />
 
         {workouts.length > 0 && (
@@ -174,29 +188,39 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#fff" },
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
   },
+
   item: {
     paddingVertical: 12,
     borderBottomColor: "#eee",
     borderBottomWidth: 1,
   },
-  itemText: { fontSize: 16, color: "#333" },
-  dateText: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 3,
+
+  // 🔵 Light blue background for routine entries
+  routineItem: {
+    backgroundColor: "#e7f3ff",
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 14,
+    marginVertical: 4,
   },
+
+  itemText: { fontSize: 16, color: "#333" },
+  dateText: { fontSize: 14, color: "#777", marginTop: 3 },
+
   empty: {
     marginTop: 20,
     textAlign: "center",
     color: "#777",
     fontSize: 16,
   },
+
   clearBtn: {
     marginTop: 20,
     padding: 12,

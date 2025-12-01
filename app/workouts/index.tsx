@@ -6,33 +6,31 @@ import { Timer } from "@data/Timer";
 import { useAuth } from "@/components/Auth";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, getDocs, writeBatch } from "firebase/firestore";
+import { EXERCISES } from "@/data/exercises";
+import { MuscleGroupPicker } from "@/components/MuscleGroupPicker";
+import { ExercisePicker } from "@/components/ExercisePicker";
 
 
-const EXERCISES = [
-  "Bench Press",
-  "Squat",
-  "Deadlift",
-  "Overhead Press",
-  "Barbell Row",
-  "Pull-Up",
-  "Bicep Curl",
-  "Tricep Extension",
-  "Leg Press",
-  "Lateral Raise",
-];
+
+
 
 export default function WorkoutsScreen() {
   const { user } = useAuth();
 
-  const [exercise, setExercise] = useState("");
+  const [exerciseId, setExerciseId] = useState("");
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [sets, setSets] = useState("");
-  const [showPicker, setShowPicker] = useState(false);
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const timerRef = useRef<Timer | null>(null);
+  const selectedExercise = EXERCISES.find(e => e.id === exerciseId);
+  const [groupPickerVisible, setGroupPickerVisible] = useState(false);
+  const [exercisePickerVisible, setExercisePickerVisible] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState("");
+
+
 
   
 
@@ -45,7 +43,7 @@ export default function WorkoutsScreen() {
 
  
   const handleSave = async () => {
-    if (!exercise || !weight || !reps || !sets) {
+    if (!exerciseId || !weight || !reps || !sets) {
       return;
     }
 
@@ -56,7 +54,7 @@ export default function WorkoutsScreen() {
 
     const newWorkout = {
       id: Date.now().toString(),
-      exercise,
+      exerciseId,
       weight,
       reps,
       sets,
@@ -92,7 +90,7 @@ export default function WorkoutsScreen() {
     }
 
     // Reset input fields
-    setExercise("");
+    setExerciseId("");
     setWeight("");
     setReps("");
     setSets("");
@@ -137,47 +135,15 @@ export default function WorkoutsScreen() {
           <Text style={styles.title}>Log a Workout</Text>
 
           <Text style={styles.label}>Exercise</Text>
-          <Pressable style={styles.select} onPress={() => setShowPicker(true)}>
-            <Text style={[styles.selectText, !exercise && styles.placeholder]}>
-              {exercise || "Select an exercise..."}
+          <Pressable style={styles.select} onPress={() => setGroupPickerVisible(true)}>
+            <Text style={[styles.selectText, !exerciseId && styles.placeholder]}>
+              {selectedExercise?.name || "Select an exercise..."}
+
             </Text>
             <Text style={styles.chevron}>▾</Text>
           </Pressable>
 
-          {/* Modal Dropdown */}
-          <Modal
-            visible={showPicker}
-            animationType="slide"
-            transparent
-            onRequestClose={() => setShowPicker(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalSheet}>
-                <Text style={styles.modalTitle}>Select Exercise</Text>
-                <ScrollView>
-                  {EXERCISES.map((name) => (
-                    <Pressable
-                      key={name}
-                      style={styles.option}
-                      onPress={() => {
-                        setExercise(name);
-                        setShowPicker(false);
-                      }}
-                    >
-                      <Text style={styles.optionText}>{name}</Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
 
-                <Pressable
-                  style={styles.cancelBtn}
-                  onPress={() => setShowPicker(false)}
-                >
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
 
           <TextInput
             style={styles.input}
@@ -211,7 +177,8 @@ export default function WorkoutsScreen() {
                 {workouts.map((w) => (
                   <View key={w.id} style={styles.entry}>
                     <Text style={styles.entryText}>
-                      {w.exercise} — {w.weight} lbs × {w.reps} reps × {w.sets} sets
+                      {EXERCISES.find(e => e.id === w.exerciseId)?.name || "Unknown"} — 
+                      {w.weight} lbs × {w.reps} reps × {w.sets} sets
                     </Text>
                   </View>
                 ))}
@@ -224,6 +191,34 @@ export default function WorkoutsScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {groupPickerVisible && (
+        <MuscleGroupPicker
+          visible={groupPickerVisible}
+          onClose={() => setGroupPickerVisible(false)}
+          onSelect={(group) => {
+            setSelectedGroup(group);
+            setGroupPickerVisible(false);
+            setExercisePickerVisible(true);
+          }}
+        />
+      )}
+
+
+      {exercisePickerVisible && (
+        <ExercisePicker
+          visible={exercisePickerVisible}
+          group={selectedGroup}
+          onClose={() => setExercisePickerVisible(false)}
+          onSelect={(id) => {
+            setExerciseId(id);
+            setExercisePickerVisible(false);
+          }}
+        />
+      )}
+
+
+
 
       {/* Timer */}
       <Modal visible={timerModalVisible} transparent animationType="fade">
