@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import { StyleSheet, Text, View, Pressable, Image } from "react-native";
 import React from "react";
 import { useAuth } from "@/components/Auth";
 import { useRouter } from "expo-router";
@@ -13,6 +13,13 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Background image */}
+      <Image
+        source={require("@/assets/images/homeBackground.png")}
+        style={styles.backgroundImage}
+        blurRadius={1} // optional, you can blur if you want
+      />
+
       <Text style={styles.title}>🏋️ Workout Tracker Home</Text>
       <Text style={styles.subtitle}>Welcome Back, {name}</Text>
 
@@ -36,6 +43,14 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0.3, // makes it translucent
+  },
   container: {
     flex: 1,
     alignItems: "center",
