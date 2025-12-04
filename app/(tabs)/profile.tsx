@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/Auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { Image } from "react-native";
 
 
 const GOAL_OPTIONS = [
@@ -33,6 +34,7 @@ export default function ProfileScreen() {
   const [showGoalPicker, setShowGoalPicker] = useState(false);
   const [showExperiencePicker, setShowExperiencePicker] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  
 
 
   // Load existing profile data
@@ -89,6 +91,11 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+
+        <Image 
+          source={require("@/assets/images/defaultProfile.png")} 
+          style={styles.profilePic}
+        />
 
         <Text style={styles.title}>Your Profile</Text>
 
@@ -317,6 +324,14 @@ toastText: {
   color: "white",
   fontWeight: "600",
   fontSize: 16,
+},
+profilePic: {
+  width: 60,
+  height: 60,
+  borderRadius: 30,
+  position: "absolute",
+  top: 10,
+  right: 20,
 },
 
 });

@@ -224,9 +224,10 @@ export default function WorkoutsScreen() {
       <Modal visible={timerModalVisible} transparent animationType="fade">
         <View style={styles.timerOverlay}>
           <View style={styles.timerContent}>
-            <Text style={styles.timerText}>Workout Timer: {timerSeconds}s</Text>
+            <Text style={styles.timerText}>Great work! Take a rest:</Text>
+            <Text style={styles.timerText}>{timerSeconds}s</Text>
             <Button
-              title="Close"
+              title="End Rest"
               onPress={() => {
                 timerRef.current?.pause();
                 setTimerModalVisible(false);
