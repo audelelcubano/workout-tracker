@@ -27,13 +27,6 @@ var count4 = 2;
 
 
 
-function getCounts()
-{
-  for(var i = 0; i < 10; i++)
-  {
-  
-  }
-}
 
 
 let workouts =
@@ -77,7 +70,18 @@ let shouldersNames =
     "ShoulderTest1",
     "ShoulderTest"
 ]
-
+//This is the example for assigning the counts of the muscle groups.
+//This assumes that these values are stored in the user's info and updated when they
+//complete workouts.
+function setCounts()
+{
+  /*
+  count1 = /User's chest count/;
+  count2 = /User's upper chest count/;
+  count3 = /User's triceps count/;
+  count4 = /User's shoulders count/;
+  */
+}
 
 function workoutSort()
 {
@@ -248,12 +252,5 @@ const styles = StyleSheet.create({
     color: "#777",
     fontSize: 16,
   },
-  clearBtn: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  clearText: { color: "#444", fontWeight: "600" },
+
 });

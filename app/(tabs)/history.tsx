@@ -19,14 +19,7 @@ interface WorkoutEntry {
   weight: string;
   date: string;
 }
-var test1 = 1;
-var test2 = 2;
-function displayText()
-{
-  var displayVal = "";
-  displayVal = " Values " + test1 + " and " + test2 + " ";
-  return displayVal;
-}
+
 export default function HistoryScreen() {
   const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
 
@@ -74,7 +67,7 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Text style={styles.title}>📊 Workout History {displayText()}</Text>
+        <Text style={styles.title}>📊 Workout History </Text>
         
         <FlatList
           data={workouts}
