@@ -169,18 +169,8 @@ export default function RecommendationScreen() {
       <View style={styles.container}>
         <Text style={styles.title}> Workout Recommendations </Text>
         
-        <FlatList
-          data={workouts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={
-            <Text style={styles.empty}>No workouts logged yet.</Text>
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.item}
 
-            >
+
                 
               <Text style={styles.itemText}>
                 Muscle Group : {getType(0)}
@@ -213,11 +203,9 @@ export default function RecommendationScreen() {
               <Text style={styles.dateText}>
                 {getWorkout(workoutCodes[2],1)}
               </Text>
-            </Pressable>
             
-          )}
-          
-        />
+            
+  
         
         
         
