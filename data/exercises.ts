@@ -620,5 +620,137 @@ export const EXERCISES: Exercise[] = [
     difficulty: "beginner",
     goalTags: ["endurance"],
     type: "isolation"
-  }
+  },
+
+  // Used in Lower Hypertrophy
+{
+  id: "front_squat",
+  name: "Front Squat",
+  muscleGroup: "legs",
+  muscles: ["quads", "core"],
+  equipment: "barbell",
+  difficulty: "intermediate",
+  goalTags: ["strength", "hypertrophy"],
+  type: "compound",
+},
+
+// Used in Push Day
+{
+  id: "shoulder_press",
+  name: "Shoulder Press",
+  muscleGroup: "shoulders",
+  muscles: ["shoulders", "triceps"],
+  equipment: "barbell",
+  difficulty: "beginner",
+  goalTags: ["strength", "hypertrophy"],
+  type: "compound",
+},
+
+// Used in Rest / Light Cardio + Fat Loss Plans
+{
+  id: "walk_treadmill",
+  name: "Treadmill Walk",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "machine",
+  difficulty: "beginner",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+{
+  id: "stretch_full_body",
+  name: "Full Body Stretch",
+  muscleGroup: "core",
+  muscles: ["full body"],
+  equipment: "bodyweight",
+  difficulty: "beginner",
+  goalTags: ["endurance"],
+  type: "isolation",
+},
+
+// Cardio templates
+{
+  id: "run_treadmill",
+  name: "Treadmill Run",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "machine",
+  difficulty: "beginner",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+{
+  id: "bike_interval",
+  name: "Bike Intervals",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "machine",
+  difficulty: "beginner",
+  goalTags: ["endurance", "fat_loss"],
+  type: "compound",
+},
+{
+  id: "elliptical_easy",
+  name: "Elliptical (Easy)",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "machine",
+  difficulty: "beginner",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+
+// HIIT
+{
+  id: "sprint_interval_fast",
+  name: "Sprint Interval (Fast)",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "bodyweight",
+  difficulty: "advanced",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+{
+  id: "sprint_interval_rest",
+  name: "Sprint Interval (Rest Jog)",
+  muscleGroup: "legs",
+  muscles: ["legs", "cardio"],
+  equipment: "bodyweight",
+  difficulty: "beginner",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+
+// Missing from circuits
+{
+  id: "jump_squat",
+  name: "Jump Squat",
+  muscleGroup: "legs",
+  muscles: ["quads", "glutes"],
+  equipment: "bodyweight",
+  difficulty: "beginner",
+  goalTags: ["fat_loss", "endurance"],
+  type: "compound",
+},
+{
+  id: "kettlebell_swing",
+  name: "Kettlebell Swing",
+  muscleGroup: "legs",
+  muscles: ["glutes", "hamstrings", "core"],
+  equipment: "kettlebell",
+  difficulty: "intermediate",
+  goalTags: ["fat_loss", "hypertrophy"],
+  type: "compound",
+},
+{
+  id: "tricep_dip",
+  name: "Tricep Dip",
+  muscleGroup: "arms",
+  muscles: ["triceps"],
+  equipment: "bodyweight",
+  difficulty: "beginner",
+  goalTags: ["hypertrophy"],
+  type: "compound",
+}
 ];

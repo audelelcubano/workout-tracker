@@ -1,93 +1,217 @@
+Manual
+
+This document provides an overview of how to use the workout tracking application across its core features: onboarding, profile setup, routines, scheduling, workout execution, history, and analytics. It is designed for users and testers evaluating the workflow of the app.
+
+1. Getting Started
+Launching the App
+
+The app can be opened either through a mobile build (Expo Go or development build) or through the web version in the browser.
+Both platforms share the same account and Firestore backend, meaning profile settings and logged workouts persist across devices.
+
+Signing In
+
+Users must authenticate to access their profile, routines, and history.
+Once signed in, all navigation tabs become available.
+
+2. Profile Setup
+
+The app begins with user profile information. The user provides:
+
+Fitness goal (Build Muscle, Lose Fat, Increase Endurance)
+
+Experience level
+
+Basic physical metrics if needed in future versions
+
+This information influences:
+
+Auto-generated training plans
+
+Recommended workout structure
+
+Scheduling logic
+
+Changes to the profile update recommendations immediately.
+
+3. Routines
+Viewing Saved Routines
+
+Users can open the Saved Routines tab to see all custom and auto-generated routines.
+
+Creating Routines
+
+Users can:
+
+Build completely custom routines by selecting exercises
+
+Add sets and reps
+
+Save routines for later use
+
+Editing Routines
+
+Each routine supports:
+
+Renaming
+
+Adding exercises
+
+Removing exercises
+
+Reordering (optional future extension)
+
+Routine edits update immediately in Firestore.
+
+4. Auto-Generated Training Plans
+
+The Schedule screen provides an automatic weekly plan builder based on:
+
+User goal
+
+Available templates stored in the app
+
+When the user selects Generate Plan:
+
+The app creates seven routines (one per day)
+
+Assigns them to the weekly schedule
+
+Saves all generated routines with the generated flag
+
+If a plan already exists, the user can:
+
+Replace the plan
+
+Keep both (which duplicates the routines)
+
+The user may still manually edit or assign routines afterward.
+
+5. Weekly Schedule
+
+The Week View consists of seven day slots (Day 1–Day 7).
+Each day displays:
+
+Assigned routine name
+
+Tap to open routine selection if none assigned
+
+Hold or tap options to start workout or change assigned routine
+
+The schedule always highlights the current day.
+
+Users can freely reassign routines at any time without affecting saved progress.
+
+6. Starting a Workout
+
+The workout flow differs depending on what is being performed:
+
+Routine Workouts
+
+Opening a routine initiates a session view showing all exercises and their sets.
+Users can:
+
+Log weight and reps
+
+Complete exercises sequentially
+
+Finish and save the entire session
+Tracked data is pushed into history.
+
+Manual Logging
+
+Users may track individual exercises outside of routines.
+Each entry logs:
+
+Exercise
+
+Weight
+
+Reps
+
+Date and timestamp
+
+Cardio Sessions
+
+Cardio sessions collect:
+
+Speed
+
+Duration
+
+Distance (calculated or manually entered)
+
+Calories (if applicable)
+
+All session types store a timestamp, making them appear chronologically in History.
+
+7. Workout History
+
+The History screen aggregates all logged entries:
+
+Routine sessions
+
+Individual strength sets
+
+Cardio sessions
+
+Entries are sorted newest first.
+
+Managing History
+
+Available actions:
+
+Long-press an item to trigger delete confirmation
+
+Tap the trash icon to delete directly
+
+Undo delete (5-second window)
+
+Clear all workout history with a confirmation step
+
+Each entry stores a Firestore reference, allowing precise deletion.
+
+8. Analytics
+
+The Analytics section summarizes performance over time.
+Depending on data availability, analytics may include:
+
+Volume trends
+
+Frequency of training
+
+Estimated progression
+
+Cardio totals
+
+The analytics feature reads directly from History, so all logged sessions automatically contribute.
+
+9. Sync and Persistence
+
+All user data (profile, routines, schedule, history) is stored in Firebase under:
+
+users/{uid}/...
 
 
-This app is built with Expo SDK 54 and runs inside the Expo Go app on iOS or Android. No Xcode or Android Studio required.
+This means:
 
-1. Install Expo Go on your phone
+Mobile and web share the same data
 
-iPhone: open the App Store and search for Expo Go (publisher: Expo Project).
+The app restores all state after sign-in
 
-Android: open the Google Play Store and search for Expo Go.
+Generated routines and schedules remain persistent unless changed or deleted by the user
 
-2. Install Node.js (only if you want to run it on your computer)
+Offline behavior is limited but may allow read caching depending on Firebase settings.
 
-Go to the website: nodejs.org
+10. Error Handling and Feedback
 
-Download and install the LTS version (20.x or newer).
+Throughout the app:
 
-After install, open your terminal or PowerShell and check:
-node -v
-npm -v
+Invalid profile data disables dependent features
 
-3. Unzip the project
+Schedule selection prevents assigning nonexistent routines
 
-Extract the zip file anywhere on your computer (for example, Desktop).
+History deletion includes confirmation and undo mechanisms
 
-Open a terminal (PowerShell on Windows).
+Async actions (loading, saving, fetching) show visual feedback when needed
 
-Navigate into the project folder. Example:
-cd C:\Users\YourName\Desktop\workout-tracker
-
-4. Install dependencies
-
-Run this once inside the project folder:
-npm install
-
-5. Start the development server
-
-Run:
-npx expo start
-
-This will open a new browser tab with Expo Dev Tools.
-
-In your terminal, you will also see a QR code.
-
-6. Open the app on your phone
-
-On iPhone: open the Camera app, point it at the QR code, and tap the link that appears. It will open inside Expo Go.
-
-On Android: open the Expo Go app and use the built-in QR scanner.
-
-You should now see the app running.
-
-7. Test the features
-
-Switch between Home and Workouts tabs.
-
-In Workouts:
-
-Tap “Select an exercise…” → a modal list will slide up from the bottom.
-
-Pick an exercise (Bench Press, Squat, Deadlift, Overhead Press, Barbell Row).
-
-Enter weight, reps, and sets.
-
-Tap “Save Workout”.
-
-The saved workout is logged in the terminal where the server is running. Example:
-Workout saved: { exercise: 'Bench Press', weight: '135', reps: '10', sets: '3' }
-
-8. Editing the exercise list
-
-All exercises are stored in a single file:
-app/data/exercises.ts
-
-To add or remove an exercise:
-
-Open the file in a text editor.
-
-Modify the list. Example:
-
-export const EXERCISES = [
-"Bench Press",
-"Squat",
-"Deadlift",
-"Overhead Press",
-"Barbell Row",
-"Pull-Ups"
-];
-
-Save the file. The app will reload automatically and the new exercise will appear in the list.
-
-9. Stopping the server
-
-In the terminal, press Ctrl + C to stop the Expo server.
+Users are guided to correct issues without breaking the workflow.

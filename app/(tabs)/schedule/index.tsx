@@ -1,11 +1,11 @@
 import { View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "expo-router";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/Auth";
-import { collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, addDoc, collection, getDocs } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
 
 
@@ -14,6 +14,98 @@ function getTodayIndex() {
   const jsDay = new Date().getDay(); // 0=Sun, 1=Mon
   return jsDay === 0 ? 7 : jsDay;
 }
+
+const TEMPLATES = {
+  buildMuscle: {
+    "Push Day": [
+      { id: "barbell_bench_press", sets: 4, reps: 8 },
+      { id: "shoulder_press", sets: 3, reps: 10 },
+      { id: "tricep_pushdown", sets: 3, reps: 12 },
+    ],
+    "Pull Day": [
+      { id: "barbell_row", sets: 4, reps: 8 },
+      { id: "lat_pulldown", sets: 3, reps: 10 },
+      { id: "bicep_curl", sets: 3, reps: 12 },
+    ],
+    "Leg Day": [
+      { id: "barbell_squat", sets: 4, reps: 6 },
+      { id: "leg_press", sets: 3, reps: 10 },
+      { id: "leg_curl", sets: 3, reps: 12 },
+    ],
+    "Upper Hypertrophy": [
+      { id: "incline_bench_press", sets: 4, reps: 10 },
+      { id: "lateral_raise", sets: 3, reps: 15 },
+      { id: "tricep_dip", sets: 3, reps: 12 },
+    ],
+    "Lower Hypertrophy": [
+      { id: "front_squat", sets: 4, reps: 8 },
+      { id: "romanian_deadlift", sets: 3, reps: 10 },
+      { id: "calf_raise", sets: 3, reps: 15 },
+    ],
+
+    /** NEW */
+    "Rest / Light Cardio": [
+      { id: "walk_treadmill", sets: 1, reps: 20 },
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ],
+    "Rest": [
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ]
+  },
+
+  loseFat: {
+    "Full Body Strength": [
+      { id: "barbell_squat", sets: 3, reps: 10 },
+      { id: "pushup", sets: 3, reps: 12 },
+      { id: "barbell_row", sets: 3, reps: 10 },
+    ],
+    "Full Body Circuit": [
+      { id: "kettlebell_swing", sets: 3, reps: 15 },
+      { id: "burpee", sets: 3, reps: 15 },
+      { id: "jump_squat", sets: 3, reps: 20 },
+    ],
+    "Strength + Cardio Mix": [
+      { id: "deadlift", sets: 3, reps: 5 },
+      { id: "run_treadmill", sets: 1, reps: 20 },
+    ],
+
+    /** NEW */
+    "HIIT Cardio": [
+      { id: "sprint_interval_fast", sets: 10, reps: 30 }, // 30 sec sprint
+      { id: "sprint_interval_rest", sets: 10, reps: 60 }, // 60 sec walk
+    ],
+    "Rest / Walking": [
+      { id: "walk_treadmill", sets: 1, reps: 25 },
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ],
+    "Low Intensity Cardio": [
+      { id: "bike_easy", sets: 1, reps: 20 },
+      { id: "elliptical_easy", sets: 1, reps: 15 },
+    ],
+    "Rest": [
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ],
+  },
+
+  endurance: {
+    "Strength (Leg Focus)": [
+      { id: "barbell_squat", sets: 3, reps: 8 },
+      { id: "lunges", sets: 3, reps: 12 },
+      { id: "leg_curl", sets: 3, reps: 12 },
+    ],
+
+    /** NEW */
+    "Training": [
+      { id: "run_treadmill", sets: 1, reps: 20 },
+      { id: "bike_interval", sets: 1, reps: 15 },
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ],
+    "Rest": [
+      { id: "stretch_full_body", sets: 1, reps: 10 },
+    ]
+  }
+};
+
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -24,11 +116,15 @@ export default function ScheduleScreen() {
   const [actionDay, setActionDay] = useState<string | null>(null);
   const [actionRoutine, setActionRoutine] = useState<{ name: string; id: string } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [planModalVisible, setPlanModalVisible] = useState(false);
+  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false);
+  const replacingPlanRef = useRef(false);
 
 
   /** Load assigned day routines from Firestore */
   useEffect(() => {
     if (!user) return;
+
     const loadAssigned = async () => {
       const ref = collection(db, "users", user.uid, "schedule");
       const snap = await getDocs(ref);
@@ -37,24 +133,46 @@ export default function ScheduleScreen() {
       snap.forEach((doc) => (map[doc.id] = doc.data()));
       setAssigned(map);
     };
+
     loadAssigned();
   }, [user]);
+
+  /** Clear suggested plan whenever user updates their fitness goal */
+  useEffect(() => {
+    setWeeklyPlan([]);
+  }, [profile?.goal]);
+
 
   // Re-run when user returns to this screen (AFTER useEffect)
   useFocusEffect(
     useCallback(() => {
       if (!user) return;
 
-      const loadAssigned = async () => {
+      const loadData = async () => {
+        // Load assigned routines
         const ref = collection(db, "users", user.uid, "schedule");
         const snap = await getDocs(ref);
 
         const map: any = {};
         snap.forEach((doc) => (map[doc.id] = doc.data()));
         setAssigned(map);
+
+        // Check if auto-generated routines already exist
+        const routineRef = collection(db, "users", user.uid, "routines");
+        const routineSnap = await getDocs(routineRef);
+
+        let foundGenerated = false;
+
+        routineSnap.forEach((docSnap) => {
+          if (docSnap.data().generated === true) {
+            foundGenerated = true;
+          }
+        });
+
+        setHasGeneratedPlan(foundGenerated);
       };
 
-      loadAssigned();
+      loadData();
     }, [user])
   );
 
@@ -69,87 +187,110 @@ export default function ScheduleScreen() {
   }
 
 
-
-
-
   /** Generate recommended training plan */
   const generatePlan = () => {
     if (!profile?.goal) return;
+
+    // If the user already has a generated plan → show modal
+    if (hasGeneratedPlan) {
+      setPlanModalVisible(true);
+      return;
+    }
+
+    // Otherwise generate immediately
+    handleCreateNewPlan();
+  };
+
+
+
+  // Actually creates routines and assigns them
+  const handleCreateNewPlan = async () => {
+    if (!user || !profile?.goal) return;
 
     let plan: any[] = [];
 
     switch (profile.goal) {
       case "Build Muscle":
         plan = [
-          { name: "Push Day (Chest, Shoulders, Triceps)" },
-          { name: "Pull Day (Back, Biceps)" },
-          { name: "Leg Day" },
-          { name: "Rest / Light Cardio" },
-          { name: "Upper Hypertrophy" },
-          { name: "Lower Hypertrophy" },
-          { name: "Rest" },
+          "Push Day",
+          "Pull Day",
+          "Leg Day",
+          "Rest / Light Cardio",
+          "Upper Hypertrophy",
+          "Lower Hypertrophy",
+          "Rest",
         ];
         break;
 
       case "Lose Fat":
         plan = [
-          { name: "Full Body Strength" },
-          { name: "HIIT Cardio" },
-          { name: "Rest / Walking" },
-          { name: "Full Body Circuit" },
-          { name: "Low Intensity Steady Cardio" },
-          { name: "Strength + Cardio Mix" },
-          { name: "Rest" },
-        ];
-        break;
-
-      case "Increase Endurance":
-        plan = [
-          { name: "Long Run" },
-          { name: "Cross-Training" },
-          { name: "Rest / Stretching" },
-          { name: "Tempo Run" },
-          { name: "Strength (Leg Focus)" },
-          { name: "Light Jog" },
-          { name: "Rest" },
-        ];
-        break;
-
-      case "Gain Strength":
-        plan = [
-          { name: "Upper Strength (Low Rep)" },
-          { name: "Lower Strength (Low Rep)" },
-          { name: "Rest" },
-          { name: "Upper Strength (Heavy)" },
-          { name: "Lower Strength (Heavy)" },
-          { name: "Conditioning" },
-          { name: "Rest" },
-        ];
-        break;
-
-      case "Improve Overall Health":
-        plan = [
-          { name: "Full Body Training" },
-          { name: "Light Cardio" },
-          { name: "Stretch + Core" },
-          { name: "Full Body Training" },
-          { name: "Walk / Jog" },
-          { name: "Active Recovery" },
-          { name: "Rest" },
+          "Full Body Strength",
+          "HIIT Cardio",
+          "Rest / Walking",
+          "Full Body Circuit",
+          "Low Intensity Cardio",
+          "Strength + Cardio Mix",
+          "Rest",
         ];
         break;
 
       default:
-        plan = [];
+        plan = ["Training", "Training", "Training", "Rest", "Training", "Training", "Rest"];
     }
 
-    setWeeklyPlan(plan);
+    // Clear old generated routines (only if replace mode)
+    if (hasGeneratedPlan && replacingPlanRef.current) {
+      const ref = collection(db, "users", user.uid, "routines");
+      const snap = await getDocs(ref);
+
+      snap.forEach(async (docSnap) => {
+        if (docSnap.data().generated === true) {
+          await deleteDoc(doc(db, "users", user.uid, "routines", docSnap.id));
+        }
+      });
+    }
+
+    // Create new routines
+    const createdRoutines = [];
+
+    for (const name of plan) {
+      const ref = collection(db, "users", user.uid, "routines");
+      // pick template category
+      let templateCategory = "buildMuscle";
+      if (profile.goal === "Lose Fat") templateCategory = "loseFat";
+      if (profile.goal === "Increase Endurance" || profile.goal === "Endurance") {
+        templateCategory = "endurance";
+      }
+
+      // find exercises for this routine name
+      const exerciseTemplate =
+        (TEMPLATES as any)[templateCategory][name] || [];
+
+      const newDoc = await addDoc(ref, {
+        name,
+        groups: [],
+        exercises: exerciseTemplate,
+        generated: true,
+      });
+      createdRoutines.push({ id: newDoc.id, name: name.trim() });
+    }
+
+    // Assign to schedule (day1..day7)
+    for (let i = 0; i < 7; i++) {
+      const routine = createdRoutines[i];
+
+      const ref = doc(db, "users", user.uid, "schedule", `day${i + 1}`);
+      await setDoc(ref, {
+        routineName: routine.name,
+        routineId: routine.id,
+      });
+    }
+
+    setWeeklyPlan([]);
+
+    setPlanModalVisible(false);
+    setHasGeneratedPlan(true);
   };
-
-
-
-
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -221,6 +362,13 @@ export default function ScheduleScreen() {
               No suggested plan generated yet.{"\n"}You can press “Generate Plan” to view trainer suggestions.
             </Text>
 
+            <Pressable
+              style={styles.generateBtn}
+              onPress={handleCreateNewPlan}
+            >
+              <Text style={styles.generateText}>Save Suggested Plan to My Routines</Text>
+            </Pressable>
+
             <Pressable style={styles.generateBtn} onPress={generatePlan}>
               <Text style={styles.generateText}>Generate Plan</Text>
             </Pressable>
@@ -282,6 +430,46 @@ export default function ScheduleScreen() {
           </View>
         </View>
       )}
+
+      {planModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Generate New Plan?</Text>
+            <Text style={styles.modalSubtitle}>
+              You already have an auto-generated plan.{"\n"}
+              Do you want to replace it?
+            </Text>
+
+            <Pressable
+              style={styles.modalBtn}
+              onPress={() => {
+                replacingPlanRef.current = true;
+                handleCreateNewPlan();
+              }}
+            >
+              <Text style={styles.modalBtnText}>Replace Plan</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.modalBtn}
+              onPress={() => {
+                replacingPlanRef.current = false;
+                handleCreateNewPlan();
+              }}
+            >
+              <Text style={styles.modalBtnText}>Keep Both</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.modalCancel}
+              onPress={() => setPlanModalVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
 
     </SafeAreaView>
   );
