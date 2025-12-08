@@ -11,15 +11,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../components/Auth'; // adjust if your Auth file moved
+
+// ✅ Option 2: assign require() to a constant
+const logo = require('../assets/images/logo.png');
 
 export default function SignInScreen() {
   const { signIn, signUp, loading } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');  
+  const [name, setName] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,10 +31,9 @@ export default function SignInScreen() {
 
   const disabled = useMemo(() => {
     if (!email || !pass) return true;
-    if (mode === 'signup') { 
+    if (mode === 'signup') {
       if (!name.trim()) return true;
       if (pass !== confirm) return true;
-
     }
     return false;
   }, [email, pass, confirm, mode, name]);
@@ -47,10 +50,7 @@ export default function SignInScreen() {
       } else {
         await signUp(email.trim(), pass);
       }
-      await updateProfile(auth.currentUser!, { displayName: name.trim() }); 
-      // so user name is on home screen ^^
-
-    
+      await updateProfile(auth.currentUser!, { displayName: name.trim() });
       router.replace('/(tabs)');
     } catch (e: any) {
       const msg = e?.message ?? String(e);
@@ -60,7 +60,7 @@ export default function SignInScreen() {
     }
   };
 
-  if (loading) return null; 
+  if (loading) return null;
 
   return (
     <KeyboardAvoidingView
@@ -68,21 +68,25 @@ export default function SignInScreen() {
       style={styles.wrap}
     >
       <View style={styles.card}>
-        <Text style={styles.h1}>{mode === 'signin' ? 'Welcome back' : 'Create account'}</Text>
+        {/* Logo at the top */}
+        <Image source={logo} style={styles.logo} />
+
+        <Text style={styles.h1}>
+          {mode === 'signin' ? 'Welcome back' : 'Create account'}
+        </Text>
 
         {mode === 'signup' && (
-        <>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-           style={styles.input}
-           placeholder="Your name"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-           />
-         </>
+          <>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Your name"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
+          </>
         )}
-
 
         <Text style={styles.label}>Email</Text>
         <TextInput
@@ -129,7 +133,9 @@ export default function SignInScreen() {
           {submitting ? (
             <ActivityIndicator />
           ) : (
-            <Text style={styles.btnTxt}>{mode === 'signin' ? 'Sign in' : 'Sign up'}</Text>
+            <Text style={styles.btnTxt}>
+              {mode === 'signin' ? 'Sign in' : 'Sign up'}
+            </Text>
           )}
         </Pressable>
 
@@ -148,6 +154,13 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
   card: { gap: 12 },
+  logo: {
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
   h1: { fontSize: 26, fontWeight: '800', marginBottom: 6 },
   label: { fontSize: 12, fontWeight: '600', opacity: 0.7 },
   input: {
@@ -159,7 +172,7 @@ const styles = StyleSheet.create({
   eye: { paddingHorizontal: 10, paddingVertical: 12 },
   eyeTxt: { fontWeight: '600' },
   btn: {
-    backgroundColor: '#111', paddingVertical: 14, borderRadius: 14, alignItems: 'center',
+    backgroundColor: 'rgba(15, 30, 145, 1)', paddingVertical: 14, borderRadius: 14, alignItems: 'center',
     marginTop: 6,
   },
   btnDisabled: { opacity: 0.6 },
