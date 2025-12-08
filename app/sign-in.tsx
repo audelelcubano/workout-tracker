@@ -16,7 +16,7 @@ import {
 import { router } from 'expo-router';
 import { useAuth } from '../components/Auth'; // adjust if your Auth file moved
 
-// ✅ Option 2: assign require() to a constant
+
 const logo = require('../assets/images/logo.png');
 
 export default function SignInScreen() {
