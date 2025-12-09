@@ -1,217 +1,146 @@
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Pressable,
-  ImageBackground,
+import { useEffect, useState } from "react";
+import {Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform, View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
 import { useAuth } from "@/components/Auth";
 import { db } from "@/lib/firebase";
-import { addDoc, collection } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 
-export default function CardioScreen() {
+export default function SavedRoutinesScreen() {
   const { user } = useAuth();
+  const router = useRouter();
 
-  const [speed, setSpeed] = useState("5"); // mph input
-  const [seconds, setSeconds] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [routines, setRoutines] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [completed, setCompleted] = useState(false);
-  const [distance, setDistance] = useState(0);
-  const [calories, setCalories] = useState(0);
-
-  /** Timer */
+  // -------------------------------
+  // LOAD ROUTINES
+  // -------------------------------
   useEffect(() => {
-    let interval: any = null;
-
-    if (running) {
-      interval = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
-    } else if (!running) {
-      clearInterval(interval);
-    }
-
-    return () => clearInterval(interval);
-  }, [running]);
-
-  /** Save session into Firestore history */
-  const saveCardioSession = async (durationSeconds: number, mph: number) => {
     if (!user) return;
 
-    const miles = (durationSeconds / 3600) * mph;
-    const cals = miles * 100; // basic formula
+    const load = async () => {
+      setLoading(true);
 
-    await addDoc(collection(db, "users", user.uid, "history"), {
-      type: "cardio",
-      speed: mph,
-      duration: durationSeconds,
-      distance: miles,
-      calories: cals,
-      createdAt: new Date(),
-      date: new Date().toISOString(),
-    });
-  };
+      const ref = collection(db, "users", user.uid, "routines");
+      const snap = await getDocs(ref);
 
-  /** Handle Start/Stop button */
-  const handlePress = async () => {
-    if (running) {
-      // Stop timer
-      setRunning(false);
+      const items = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
 
-      const mph = parseFloat(speed) || 0;
-      const miles = (seconds / 3600) * mph;
-      const cals = miles * 100;
+      setRoutines(items);
+      setLoading(false);
+    };
 
-      setDistance(miles);
-      setCalories(cals);
-      setCompleted(true);
+    load();
+  }, [user]);
 
-      await saveCardioSession(seconds, mph);
+  // -------------------------------
+  // DELETE ROUTINE (WEB + MOBILE)
+  // -------------------------------
+  const deleteRoutine = async (id: string) => {
+    if (!user) return;
 
+    const performDelete = async () => {
+      await deleteDoc(doc(db, "users", user.uid, "routines", id));
+
+      // update UI
+      setRoutines((prev) => prev.filter((r) => r.id !== id));
+    };
+
+    if (Platform.OS === "web") {
+      // Web confirm()
+      const ok = window.confirm("Are you sure you want to delete this routine?");
+      if (ok) performDelete();
       return;
     }
 
-    // Reset + start
-    setSeconds(0);
-    setCompleted(false);
-    setRunning(true);
+    // Mobile Alert
+    Alert.alert("Delete Routine", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: performDelete },
+    ]);
   };
 
-  /** Format timer display */
-  const formatTime = () => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  // -------------------------------
+  // RENDER
+  // -------------------------------
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <ImageBackground
-      source={require("../../assets/images/R.png")} // adjust path to your image
-      style={styles.background}
-      resizeMode="cover"
-    >
-      {/* Overlay for readability */}
-      <View style={styles.overlay} />
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Saved Routines</Text>
 
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Cardio Session</Text>
+        {routines.length === 0 && (
+          <Text style={styles.emptyText}>No routines saved yet.</Text>
+        )}
 
-          {/* Speed Input */}
-          <Text style={styles.label}>Estimated Running Speed (mph):</Text>
-          <TextInput
-            value={speed}
-            onChangeText={setSpeed}
-            keyboardType="numeric"
-            style={styles.input}
-          />
-
-          {/* Timer */}
-          <Text style={styles.timer}>{formatTime()}</Text>
-
-          {/* Start / Stop Button */}
-          <Pressable
-            onPress={handlePress}
-            style={[styles.button, running ? styles.stopBtn : styles.startBtn]}
-          >
-            <Text style={styles.buttonText}>
-              {running ? "Stop" : "Start"}
-            </Text>
-          </Pressable>
-
-          {/* COMPLETED SUMMARY */}
-          {completed && (
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryTitle}>Session Complete 🎉</Text>
-
-              <Text style={styles.summaryText}>
-                Duration: {Math.floor(seconds / 60)} min {seconds % 60}s
+        {routines.map((routine) => (
+          <View key={routine.id} style={styles.item}>
+            {/* TAP TO OPEN ROUTINE */}
+            <Pressable
+              style={{ flex: 1 }}
+              onPress={() =>
+                router.push({
+                  pathname: "/saved-routines/[id]",
+                  params: { id: routine.id },
+                })
+              }
+            >
+              <Text style={styles.routineName}>{routine.name}</Text>
+              <Text style={styles.countText}>
+                {routine.exercises.length} exercises
               </Text>
+            </Pressable>
 
-              <Text style={styles.summaryText}>
-                Estimated Distance: {distance.toFixed(2)} miles
-              </Text>
-
-              <Text style={styles.summaryText}>
-                Estimated Calories Burned: {calories.toFixed(0)} kcal
-              </Text>
-
-              {/* Placeholder for future image */}
-              <View style={styles.imagePlaceholder}>
-                <Text style={{ color: "#888" }}>Track Image Placeholder</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
+            {/* DELETE BUTTON */}
+            <Pressable
+              style={styles.deleteBtn}
+              onPress={() => deleteRoutine(routine.id)}
+            >
+              <Text style={styles.deleteText}>Delete</Text>
+            </Pressable>
+          </View>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.3)", // darkens background slightly
-  },
-  safeArea: { flex: 1 },
-  container: { padding: 20, flex: 1 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, color: "#fff" },
-  label: { fontSize: 16, marginBottom: 6, color: "#eee" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    backgroundColor: "rgba(255,255,255,0.8)", // semi-transparent for readability
-  },
-  timer: {
-    fontSize: 48,
-    fontWeight: "700",
-    textAlign: "center",
-    marginVertical: 20,
-    color: "#fff",
-  },
-  button: {
+  safeArea: { flex: 1, backgroundColor: "#fff" },
+  container: { padding: 20 },
+  title: { fontSize: 24, fontWeight: "700", marginBottom: 20 },
+  emptyText: { color: "#777", textAlign: "center", marginTop: 20 },
+
+  item: {
     padding: 16,
+    backgroundColor: "#f1f1f1",
     borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  startBtn: { backgroundColor: "#22c55e" },
-  stopBtn: { backgroundColor: "#ef4444" },
-  buttonText: { fontSize: 18, fontWeight: "700", color: "#fff" },
-  summaryBox: {
-    marginTop: 20,
-    padding: 20,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#d1f7c4",
-  },
-  summaryTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 10,
-    textAlign: "center",
-    color: "#000",
-  },
-  summaryText: { fontSize: 16, marginBottom: 6, color: "#333" },
-  imagePlaceholder: {
-    marginTop: 20,
-    height: 150,
-    backgroundColor: "#eee",
-    borderRadius: 12,
-    justifyContent: "center",
+    marginBottom: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
+
+  routineName: { fontSize: 18, fontWeight: "700" },
+  countText: { color: "#666", marginTop: 4 },
+
+  deleteBtn: {
+    backgroundColor: "#ffdddd",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  deleteText: { color: "#a00", fontWeight: "700" },
 });
