@@ -17,7 +17,7 @@ export default function HomeScreen() {
       <Image
         source={require("@/assets/images/homeBackground.png")}
         style={styles.backgroundImage}
-        blurRadius={1} // optional, you can blur if you want
+        blurRadius={1} 
       />
 
       <Text style={styles.title}>🏋️ Workout Tracker Home</Text>
